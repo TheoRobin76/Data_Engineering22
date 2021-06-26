@@ -1,0 +1,264 @@
+db.students.insertOne({
+name: "Myles",
+year: NumberInt(2021),
+score: 6.4,
+course: "Data",
+address: {
+houseNumber: "Flat 1",
+street: "3 High Street",
+city: "Tywyn"
+}
+}
+)
+
+db.students.insertOne({
+name: "Matt",
+year: NumberInt(2021),
+score: 3.1,
+course: "Data",
+address: {
+houseNumber: "10",
+street: "Downing Street",
+city: "London"
+}
+}
+)
+
+db.students.insertOne({
+name: "Barry",
+year: NumberInt(2021),
+score: 0.9,
+course: "Data",
+address: {
+houseNumber: "4",
+street: "Windmill Lane",
+city: "Elstree"
+}
+}
+)
+
+db.students.updateOne(
+{name: "Barry"},
+{$set: {newField: true}}
+)
+
+db.students.updateOne(
+{name: "Barry"},
+{$unset: {newField: true}}
+)
+
+db.students.deleteOne(
+{name: "Barry"}
+)
+
+Star Wars Database
+
+db.characters.find(
+{name: "Luke Skywalker"}).pretty()
+
+db.characters.find({name: "Chewbacca"}, {name: 1, eye_color: 1})
+
+db.characters.find({name: "Chewbacca"}, {name: 1, eye_color: 1, _id: 0})
+
+db.characters.find({name: "Ackbar"}, {name: 1, species: 1, _id: 0})
+
+db.characters.find({name: "Ackbar"}, {name: 1, "species.name": 1, _id: 0})
+
+names and homeworld names for all humans in collection:
+db.characters.find({"species.name": "Human"}, {name: 1, "homeworld.name": 1, _id: 0})
+
+db.characters.find(
+{eye_color: {$in: ["yellow", "orange"]}},
+{name: 1, eye_color: 1, _id : 0}
+)
+
+
+name and height of all characters in the collection:
+db.characters.find({},
+{name: 1, height: 1, _id: 0 })
+
+ db.characters.aggregate([{$match: {}}, {$out: "char_demo"}]) #makes a copy to prevent ruining the original database
+
+ Turning the heights into integers so we can compare them:
+
+db.char_demo.find( {"height" : { $type : 2} } ).forEach(function(x) { x.height = new NumberInt(x.height); db.char_demo.save(x); });
+
+db.char_demo.updateMany(
+{height: 0},
+{$set: {height: "null"}})
+
+#shows all characters over 200cm in descending order
+db.char_demo.find({height: {$gt: 200}}, {name: 1, height: 1, _id: 0}).sort({ height: -1 })
+
+David's method:
+db.characters.update(
+{height: "unknown"},
+{$unset: {height: null}},
+{multi: true}
+)
+
+db.characters.update(
+{height: {$exists: true}},
+[{$set: {height: {$toInt: "$height"}}}],
+{multi: true}
+)
+
+OR:
+# doesn't delete the unknowns, just leaves them be, using regex.
+db.characters.update(
+{height: /^[0-9+$]/},
+[{$set: {height: {$toInt: "$height"}}}],
+{multi: true}
+)
+
+Doing the same for mass:
+Manually do the one for commas
+db.characters.update(
+{mass: "1,358"},
+{$set: {mass: "1358"}})
+
+db.characters.update(
+{mass: /^[0-9+$]/},
+[{$set: {mass: {$toDouble: "$mass"}}}],
+{multi: true}
+)
+
+db.characters.find({}, {name: 1, mass: 1, _id: 0}).sort({ mass: 1 })
+
+$eq - equal to
+$gt - greater than
+$gte - greater than or equal to
+$in - in a list of numbers
+$lt - less than
+$lte - less than or equal to
+$ne - not equal to
+$nin - not in a list of numbers
+
+
+db.characters.find({height: {$eq: 200}}, {name: 1, height: 1, _id: 0}).sort({ height: -1 })
+
+db.characters.find({height: {$in: [200, 228]}}, {name: 1, height: 1, _id: 0}).sort({ height: -1 })
+
+db.characters.find({mass: {$ne: "unknown"}}, {name: 1, mass: 1, _id: 0}).sort({ mass: -1 })
+
+
+AGGREGATION
+
+db.characters.aggregate(
+	[
+	{$match: {"species.name": "Human"}},
+	{$group: {_id: null, total_height: {$sum: "$height"}}}
+	]
+	)
+
+1. Find the average height and mass per gender
+
+	db.characters.aggregate(
+	[
+	{$match: {}},
+	{$group: {_id: "$gender", average_height: {$avg: "$height"}, average_mass: {$avg: "$mass"}}}
+	]
+	)
+
+2. Find the maximum height per homeworld
+
+	db.characters.aggregate( [{$group: {_id: "$homeworld.name", max_height: {$max: "$height"}}}, {$sort: {"max_height": -1}}]).pretty()
+
+3. Find the minimum mass and a count per species.  Filter out null values and sort by minimum mass descending.
+
+	db.characters.update(
+	{mass: "unknown"},
+	{$unset: {mass: null}},
+	{multi: true}
+	)
+
+	db.characters.aggregate(
+	[
+	{$group: {_id: "$species.name", min_mass: {$min: "$mass"}, species_count:{$sum: 1}}},
+	{$sort: {"min_mass": -1}}
+	]
+	).pretty()
+
+	# the "unknown" species seemed to have its name removed as well as the unknown weights and heights
+
+	{$match: {min_mass: {$ne: "unknown"}}} - filters through ignoring unknowns
+
+COUNTS
+db.characters.distinct("species.name")
+
+db.characters.count({"species.name": "Human"})
+
+db.characters.estimatedDocumentCount({})
+
+
+REFERENCING
+
+	1.Find ObjectID for Darth Vader
+
+	db.characters.find({name: "Darth Vader"}, {name: 1, _id: 1})
+	ObjectId("60d464653585e04c33d418f6")
+
+Create star ship class and add Darth Vader to a ship
+
+db.createCollection("starships")
+
+db.starships.insertOne({
+name: "TIE Advanced x1",
+model: "Twin Ion Engine Advanced x1",
+manufacturer: "Sienar Fleet Systems",
+pilot: ObjectId("60d464653585e04c33d418f6")
+})
+
+db.starships.find().pretty()
+
+db.starships.aggregate([
+{$lookup: {
+from: "characters",
+localField: "pilot",
+foreignField: "_id",
+as: "matched_pilot"
+}}, {$project: {name: 1, model: 1, "matched_pilot.name": 1}}
+])
+
+	2. Add the Millenium Falcon to your starships collection. Look up the data or make it up. The important thing is that pilot should take an array with multiple ObjectIds.
+	Chewbacca
+	Han Solo
+	Lando Calrissian
+	Nien Nunb
+
+db.characters.find({name: "Chewbacca"}, {_id: 1})
+ObjectId("60d464622e1b29198d81c901")
+
+db.characters.find({name: "Han Solo"}, {_id: 1})
+ObjectId("60d4646ec021b607bb910cb4")
+
+db.characters.find({name: "Lando Calrissian"}, {_id: 1})
+ObjectId("60d46475ae526c5139535ee0")
+
+db.characters.find({name: "Nien Nunb"}, {_id: 1})
+ObjectId("60d4647b3cb9baf32d96d6df")
+
+db.starships.insertOne({
+name: "Millenium Falcon",
+model: "Model Y",
+manufacturer: "Corellian Engineering Corporation",
+pilot: [ObjectId("60d464622e1b29198d81c901"), ObjectId("60d4646ec021b607bb910cb4"), ObjectId("60d46475ae526c5139535ee0"), ObjectId("60d4647b3cb9baf32d96d6df")]
+})
+
+db.starships.aggregate([
+{$lookup: {
+from: "characters",
+localField: "pilot",
+foreignField: "_id",
+as: "matched_pilot"
+}}, {$project: {name: 1, model: 1, "matched_pilot.name": 1}}
+]).pretty()
+
+
+ 
+
+
+
+
+
+
