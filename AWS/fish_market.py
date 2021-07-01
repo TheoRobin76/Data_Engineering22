@@ -49,14 +49,14 @@ fin_table = avg_fish_table.sort_values('Species')
 # print(fin_table)
 
 # adding to s3, AWS
-# str_buffer = io.StringIO()
-# fin_table.to_csv(str_buffer)
-#
-# s3_client.put_object(
-#     Bucket='data-eng-resources',
-#     Key='Data22/fish/tgluckstein.csv',
-#     Body=str_buffer.getvalue()
-# )
+str_buffer = io.StringIO()
+fin_table.to_csv(str_buffer)
+
+s3_client.put_object(
+    Bucket='data-eng-resources',
+    Key='Data22/fish/tgluckstein.csv',
+    Body=str_buffer.getvalue()
+)
 
 # checking to see what I added to s3
 s3_object = s3_client.get_object(
