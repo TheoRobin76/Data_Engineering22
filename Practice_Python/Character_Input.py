@@ -1,0 +1,5 @@
+name = input("Please enter your name: ")
+age = input("Please enter your age: ")
+hundred = 2021 + (100-int(age))
+copies = input("How many times would like my message to print? ")
+print(int(copies) * f"Hello, {name}, you will turn 100 in the year {hundred}\n")

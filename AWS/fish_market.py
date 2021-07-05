@@ -37,8 +37,8 @@ avg_fish_mon = fish_mon.mean()
 avg_fish_tues = fish_tues.mean()
 
 # adding 'Mon' and 'Tues' to row headings for easy comparison
-renamed_mon = (avg_fish_mon.rename(index=lambda s: s+' Mon'))
-renamed_tues = (avg_fish_tues.rename(index=lambda s: s+' Tues'))
+renamed_mon = (avg_fish_mon.rename(index=lambda s: s + ' Mon'))
+renamed_tues = (avg_fish_tues.rename(index=lambda s: s + ' Tues'))
 
 # put both dataframes into one dataframe for easier comparison
 avg_fish_table = pd.concat([renamed_mon, renamed_tues], axis=0)
@@ -48,15 +48,15 @@ avg_fish_table = pd.concat([renamed_mon, renamed_tues], axis=0)
 fin_table = avg_fish_table.sort_values('Species')
 # print(fin_table)
 
-# adding to s3, AWS
-str_buffer = io.StringIO()
-fin_table.to_csv(str_buffer)
+# adding to s3, AWS - every time you do this, you replace the original document on s3
+# str_buffer = io.StringIO()
+# fin_table.to_csv(str_buffer)
 
-s3_client.put_object(
-    Bucket='data-eng-resources',
-    Key='Data22/fish/tgluckstein.csv',
-    Body=str_buffer.getvalue()
-)
+# s3_client.put_object(
+#     Bucket='data-eng-resources',
+#     Key='Data22/fish/tgluckstein.csv',
+#     Body=str_buffer.getvalue()
+# )
 
 # checking to see what I added to s3
 s3_object = s3_client.get_object(
@@ -66,3 +66,4 @@ s3_object = s3_client.get_object(
 pprint(s3_object["Body"])
 fin_df = pd.read_csv(s3_object["Body"])
 pprint(fin_df)
+
