@@ -1,0 +1,97 @@
+1. Output the full names of the Top 5 Salespeople
+
+employees_raw = LOAD 's3://data-eng-resources/big-data/adventureworks/employees.csv' USING PigStorage(',') AS (BusinessEntityID: int);
+
+people_raw = LOAD 's3://data-eng-resources/big-data/adventureworks/people.csv' USING PigStorage(',') AS (BusinessEntityID: int, PersonType: chararray, NameStyle: int, Title: chararray, FirstName: chararray, MiddleName: chararray, LastName: chararray, Suffix: chararray, EmailPromotion: int, AdditionalContactInfo: chararray, Demographics: chararray, rowguid: chararray, ModifiedDate: chararray);
+
+salespeople_raw = LOAD 's3://data-eng-resources/big-data/adventureworks/salespeople.csv' USING PigStorage(',') AS (BusinessEntityID: int, TerritoryID: int, SalesQuota: int, Bonus: int, CommisionPct: int, SalesYTD: double, SalesLastYear: double, rowguid: chararray, ModifiedDate: chararray);
+
+territories_raw = LOAD 's3://data-eng-resources/big-data/adventureworks/territories.csv' USING PigStorage(',') AS (TerritoryID: int, Name: chararray, CountryRegionCode: chararray, Group: chararray, SalesYTD: double, SalesLastYear: double, CostYTD: float, CostLastYear: float, rowguid: chararray, ModifiedDate: chararray);
+
+people = FOREACH people_raw GENERATE BusinessEntityID, FirstName, MiddleName, LastName;
+
+salespeople = FOREACH salespeople_raw GENERATE BusinessEntityID, TerritoryID, SalesYTD;
+
+territories = FOREACH territories_raw GENERATE TerritoryID, Name;
+
+joint_people_sales = JOIN people BY BusinessEntityID, salespeople BY BusinessEntityID;
+
+final_table = JOIN joint_people_sales BY TerritoryID, territories BY TerritoryID;
+
+ordered_joint_table = ORDER joint_people_sales BY SalesYTD DESC;
+
+top5_salespeople = LIMIT ordered_joint_table 5;
+
+top5_names = FOREACH top5_salespeople GENERATE FirstName, REPLACE(MiddleName, 'NULL', '') AS mid_name, LastName;
+
+DUMP top5_names;
+
+(Linda,C,Mitchell)
+(Jae,B,Pak)
+(Michael,G,Blythe)
+(Jillian,,Carson)
+(Ranjit,R,Varkey Chudukatil)
+
+
+
+2. Find the average salesperson's sales (year to date) per territory name. Also provide the count of salespeople per territory.
+
+join_salespeople_territories = JOIN salespeople BY TerritoryID, territories BY TerritoryID;
+
+grouped_terr = GROUP join_salespeople_territories BY Name;
+
+sales_average_per_territory = FOREACH grouped_terr GENERATE FLATTEN(join_salespeople_territories.Name) AS territory_name, COUNT(join_salespeople_territories.Name) AS territory_count, AVG(join_salespeople_territories.SalesYTD) AS average_sales;
+
+distinct_sales = DISTINCT sales_average_per_territory;
+
+DUMP distinct_sales;
+
+(Canada,2,2029130.09125)
+(France,1,3121616.3202)
+(Central,1,3189418.3662)
+(Germany,1,1827066.7118)
+(Australia,1,1421810.9242)
+(Northeast,1,3763178.1787)
+(Northwest,3,1500717.4224666667)
+(Southeast,1,2315185.611)
+(Southwest,2,3354952.0833)
+(United Kingdom,1,4116871.2277)
+
+
+3. Output a file containing a list of all names of employees as initials and surname (e.g. "D. R. Harvey").
+
+employees_raw = LOAD 's3://data-eng-resources/big-data/adventureworks/employees.csv' USING PigStorage(',') AS (BusinessEntityID: int);
+
+employees = FOREACH employees_raw GENERATE BusinessEntityID;
+
+joint_employees = JOIN people BY BusinessEntityID, employees BY BusinessEntityID;
+
+people_names = FOREACH joint_employees GENERATE SUBSTRING(FirstName, 0, 1) AS first_init, MiddleName, LastName;
+
+filtered_names = FOREACH people_names GENERATE first_init, REPLACE(MiddleName, 'NULL', '') AS mid_name, LastName;
+
+formatted_names = FOREACH filtered_names GENERATE first_init, SUBSTRING(mid_name, 0, 1), LastName;
+
+DUMP formatted_names;
+
+(K,J,Sánchez)
+(T,L,Duffy)
+(R,,Tamburello)
+(R,,Walters)
+(G,A,Erickson)
+(J,H,Goldberg)
+(D,A,Miller)
+(D,L,Margheim)
+(G,N,Matthew)
+(M,,Raheem)
+(O,V,Cracium)
+(T,B,D'Hers)
+(J,M,Galvin)
+(M,I,Sullivan)
+
+etc.. up to employee 290
+
+
+
+
+

@@ -248,7 +248,7 @@ pilot: [ObjectId("60d464622e1b29198d81c901"), ObjectId("60d4646ec021b607bb910cb4
 db.starships.aggregate([
 {$lookup: {
 from: "characters",
-localField: "pilot",
+localField: "pilots",
 foreignField: "_id",
 as: "matched_pilot"
 }}, {$project: {name: 1, model: 1, "matched_pilot.name": 1}}
