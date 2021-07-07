@@ -5,6 +5,9 @@ list1 = []
 for i in x:
     if num % i == 0:
         list1.append(i)
-        if len(list1) == 2:
-            print(f"{num} is a prime number")
+        # print(len(list1))
+if len(list1) == 2:
+    print(f"{num} is a prime number")
+else:
+    print(f"{num} is not a prime number")
 print(list1)
