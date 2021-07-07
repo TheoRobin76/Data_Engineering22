@@ -58,6 +58,7 @@ DUMP distinct_sales;
 (United Kingdom,1,4116871.2277)
 
 
+
 3. Output a file containing a list of all names of employees as initials and surname (e.g. "D. R. Harvey").
 
 employees_raw = LOAD 's3://data-eng-resources/big-data/adventureworks/employees.csv' USING PigStorage(',') AS (BusinessEntityID: int);
