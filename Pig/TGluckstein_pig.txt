@@ -92,6 +92,37 @@ DUMP formatted_names;
 
 etc.. up to employee 290
 
+3. Corrected in correct format 08/07/2021
+
+people = LOAD 's3://data-eng-resources/big-data/adventureworks/people.csv' USING PigStorage(',') AS (BusinessEntityID: int, PersonType: chararray, NameStyle: int, Title: chararray, FirstName: chararray, MiddleName: chararray, LastName: chararray, Suffix: chararray, EmailPromotion: int, AdditionalContactInfo: chararray, Demographics: chararray, rowguid: chararray, ModifiedDate: chararray);
+
+employees = LOAD 's3://data-eng-resources/big-data/adventureworks/employees.csv' USING PigStorage(',') AS (BusinessEntityID: int, NationalIDNumber: long, LoginID: chararray, OrganizationNode: int, OrganizationLevel: int, JobTitle: chararray, BirthDate: chararray, MaritalStatus: chararray, Gender: chararray, HireDate: chararray, SalariedFlag: int, VacationHours: int, SickLeaveHours: int, CurrentFlag: int, rowguid: chararray, ModifiedDate: chararray);
+
+initials = FOREACH people GENERATE BusinessEntityID, SUBSTRING(FirstName, 0, 1) AS First, SUBSTRING(MiddleName, 0, 1) AS Middle, LastName, Suffix;
+
+employee_ids = FOREACH employees GENERATE BusinessEntityID;
+
+joined_results = JOIN initials BY BusinessEntityID, employee_ids BY BusinessEntityID;
+
+filter_middle_name = FILTER joined_results BY MiddleName != 'NULL';
+
+filter_no_middle_name = FILTER joined_results BY MiddleName == 'NULL';
+
+final_results_1 = FOREACH filter_middle_name GENERATE CONCAT(initials::First, '. ', initials::Middle, '. ', initials::LastName, ' ', initials::Suffix) AS Fullname;
+
+final_results_2 = FOREACH filter_no_middle_name GENERATE CONCAT(initials::First, '. ', initials::LastName, ' ', initials::Suffix) AS Fullname;
+
+final_table = UNION final_results_1, final_results_2;
+
+DUMP final_table;
+
+# You could also use a conditional
+
+names = FOREACH joined_results GENERATE CONCAT(initials::First, '. ', (initials::Middle == '' ? '' : CONCAT(initials::Middle, '. ')), initials::LastName) AS name;
+
+DUMP name;
+
+
 
 
 
