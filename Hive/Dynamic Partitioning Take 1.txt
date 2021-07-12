@@ -1,0 +1,64 @@
+# download the vgsales table in EMR
+aws s3 cp s3://data-eng-resources/big-data/vgsales.csv .
+
+# This works up until I try to insert data from the placeholder into the vgsales table
+# The issue seems to be with the maximum number of partitions per node.
+# Another issue is that my hue crashes when I try to run the file and then I have to reboot my cluster.
+# Some of the names have commas in them which will cause a problem when visualising the table.
+
+CREATE DATABASE vg;
+
+SET hive.exec.dynamic.partition=true;
+SET hive.exec.dynamic.partition.mode=nonstrict;
+SET hive.exec.max.dynamic.partitions = 10000;
+SET hive.exec.max.dynamic.partitions.pernode = 10000;
+
+DROP TABLE IF EXISTS vg.vgsales;
+CREATE TABLE vg.vgsales (
+  RankID INT,
+  Name STRING,
+  Release_year INT,
+  Genre STRING,
+  Publisher STRING,
+  NA_Sales FLOAT,
+  EU_Sales FLOAT,
+  JP_Sales FLOAT,
+  Other_Sales FLOAT,
+  Global_Sales FLOAT
+)
+PARTITIONED BY (
+  Platform STRING
+)
+CLUSTERED BY (
+  Name
+) INTO 8 BUCKETS
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+
+DROP TABLE IF EXISTS vg.vgsales_placeholder;
+CREATE TABLE vg.vgsales_placeholder (
+  RankID INT,
+  Name STRING,
+  Platform STRING,
+  Release_year INT,
+  Genre STRING,
+  Publisher STRING,
+  NA_Sales FLOAT,
+  EU_Sales FLOAT,
+  JP_Sales FLOAT,
+  Other_Sales FLOAT,
+  Global_Sales FLOAT
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
+
+LOAD DATA LOCAL INPATH '/home/hadoop/vgsales.csv'
+OVERWRITE INTO TABLE vg.vgsales_placeholder;
+
+SELECT * FROM vg.vgsales_placeholder;
+
+INSERT INTO TABLE vg.vgsales PARTITION (Platform)
+SELECT RankID, Name, Release_year, Genre, Publisher, NA_Sales,
+EU_Sales, JP_Sales, Other_Sales, Global_Sales, Platform
+FROM vg.vgsales_placeholder;
+
+SELECT * FROM vg.vgsales;
+DROP TABLE vg.vgsales_placeholder;
