@@ -3,7 +3,7 @@ aws s3 cp s3://data-eng-resources/big-data/vgsales.csv .
 
 # This code should work but when I try to run it I get an error message saying 'The query is hanging and taking longer than expected'. I am then unable to run any more queries in Hive, much to my dismay.
 I then have to reboot my cluster to try and run the code and it times out again. The 'Dismay Cycle' then repeats.
-While dismay = True:
+While dismay == True:
     dismay_cycle()
 # UPDATE: I tried running this code again on Sunday morning and it looks like it works! Therefore dismay = False.
 
